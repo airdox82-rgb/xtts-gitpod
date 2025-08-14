@@ -154,11 +154,7 @@ with gr.Blocks(title="Voice Cloner Pro (XTTS v2)", theme=THEME, css="""
 
     with gr.Row():
         with gr.Column():
-            gr.Markdown("### 1) Modell laden")
-            load_btn = gr.Button("📦 XTTS v2 jetzt laden", variant="primary")
-            load_status = gr.Markdown("Modell ist noch nicht geladen.")
-        with gr.Column():
-            gr.Markdown("### 2) Referenzstimme (optional)")
+            gr.Markdown("### 1) Referenzstimme (optional)")
             ref_audio = gr.Audio(
                 sources=["microphone", "upload"],
                 type="filepath",
@@ -168,9 +164,8 @@ with gr.Blocks(title="Voice Cloner Pro (XTTS v2)", theme=THEME, css="""
             clear_ref_btn = gr.Button("♻️ Referenzstimme verwerfen")
             ref_status = gr.Markdown("Noch keine Referenzstimme gesetzt.")
 
-    with gr.Row():
         with gr.Column():
-            gr.Markdown("### 3) Text zu Sprache")
+            gr.Markdown("### 2) Text zu Sprache")
             lang = gr.Dropdown(
                 label="Sprache",
                 choices=["de", "en", "fr", "es", "it", "pt", "nl", "pl", "ru", "tr", "ja", "ko", "zh"],
@@ -183,12 +178,16 @@ with gr.Blocks(title="Voice Cloner Pro (XTTS v2)", theme=THEME, css="""
             )
             gen_btn = gr.Button("🗣️ Audio generieren", variant="primary")
 
-        with gr.Column():
-            gr.Markdown("### Ergebnis")
-            audio_out = gr.Audio(label="Wiedergabe", interactive=False)
-            status = gr.Markdown()
+    with gr.Row():
+        with gr.Column(scale=2):
+             gr.Markdown("### Ergebnis")
+             audio_out = gr.Audio(label="Wiedergabe", interactive=False)
+             status = gr.Markdown()
+        with gr.Column(scale=1):
+            gr.Markdown("### &nbsp;")
             save_btn = gr.Button("💾 Datei anzeigen (Download)")
             file_out = gr.File(label="Letzte generierte Datei")
+
 
     gr.Markdown(
         """
@@ -201,8 +200,41 @@ XTTS v2 unterstützt viele Sprachen; die Aussprache passt du mit der Sprachwahl 
     )
 
     # Events
-    load_btn.click(load_model, outputs=load_status)
     set_ref_btn.click(remember_reference_voice, inputs=ref_audio, outputs=ref_status)
     clear_ref_btn.click(clear_ref, outputs=ref_status)
+    gen_btn.click(
+        generate_tts,
+        inputs=[text, lang],
+        outputs=[audio_out, status],
+        api_name="tts",
+    )
+    save_btn.click(get_download_path, outputs=file_out, api_name="get_file")
 
-demo.launch()
+
+# Modell beim Start laden
+# PyTorch 2.6+ fix for TTS model loading
+try:
+    import torch
+    from TTS.tts.configs.xtts_config import XttsConfig
+    from TTS.tts.models.xtts import XttsAudioConfig, XttsArgs
+    from TTS.tts.configs.shared_configs import BaseTTSConfig
+    from TTS.config.shared_configs import BaseDatasetConfig
+    from coqpit import Coqpit
+    # Add all the classes that are in the checkpoint to the safe globals
+    torch.serialization.add_safe_globals([XttsConfig, XttsAudioConfig, XttsArgs, BaseTTSConfig, BaseDatasetConfig, Coqpit])
+    print("INFO: PyTorch >2.6 patch applied for model loading.")
+except (ImportError, AttributeError) as e:
+    print(f"INFO: PyTorch >2.6 patch not applied. Error: {e}")
+    pass
+
+print("=" * 40)
+print("Lade XTTS v2 Modell...")
+load_status_msg = load_model()
+print(load_status_msg)
+print("=" * 40)
+
+if _tts_model is None:
+    print("WARNUNG: Das Modell konnte nicht geladen werden. Die App wird beendet.")
+else:
+    print("Starte Gradio UI...")
+    demo.launch()
