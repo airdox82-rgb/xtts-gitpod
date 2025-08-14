@@ -1,0 +1,21 @@
+# .gitpod.yml — minimale, robuste Konfiguration
+image:
+  # Bewährtes Standard-Workspace-Image mit Docker-CLI
+  file: .gitpod.Dockerfile
+
+tasks:
+  - name: XTTS-Server (Docker)
+    init: |
+      # Für CPU-Tests: das leichte Image ziehen
+      docker pull ghcr.io/coqui-ai/xtts-streaming-server:latest-cpu
+    command: |
+      # XTTS-Server starten (Port 8000), Lizenz-Variable setzen
+      docker run --name xtts \
+        -e COQUI_TOS_AGREED=1 \
+        --rm -p 8000:80 \
+        ghcr.io/coqui-ai/xtts-streaming-server:latest-cpu
+
+ports:
+  - port: 8000
+    onOpen: open-browser
+    visibility: public
