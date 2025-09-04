@@ -210,8 +210,10 @@ XTTS v2 unterstützt viele Sprachen; die Aussprache passt du mit der Sprachwahl 
     )
     save_btn.click(get_download_path, outputs=file_out, api_name="get_file")
 
+    # Lade das Modell, wenn die UI bereit ist und zeige den Fortschritt an
+    demo.load(load_model, outputs=status)
 
-# Modell beim Start laden
+
 # PyTorch 2.6+ fix for TTS model loading
 try:
     import torch
@@ -227,14 +229,6 @@ except (ImportError, AttributeError) as e:
     print(f"INFO: PyTorch >2.6 patch not applied. Error: {e}")
     pass
 
-print("=" * 40)
-print("Lade XTTS v2 Modell...")
-load_status_msg = load_model()
-print(load_status_msg)
-print("=" * 40)
-
-if _tts_model is None:
-    print("WARNUNG: Das Modell konnte nicht geladen werden. Die App wird beendet.")
-else:
-    print("Starte Gradio UI...")
-    demo.launch()
+# Starte die Gradio UI. Das Modell wird jetzt durch demo.load() geladen.
+print("Starte Gradio UI...")
+demo.launch()
